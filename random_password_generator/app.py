@@ -7,8 +7,7 @@ from random import sample, shuffle
 def initial_data() -> tuple[int, str]:
     """
     Функция производит валидацию введенных пользователем значений длины пароля и спецсимволов
-    :return: Целое число - длина пароля
-             Список спецсимволов для генерации пароля
+    :return: Кортеж из: Целое число - длина пароля, Строка спецсимволов для генерации пароля
     """
 
     print("Добро пожаловать в программу по генерации случайных паролей!")
@@ -46,7 +45,7 @@ def initial_data() -> tuple[int, str]:
     spec_symbols = ''.join(spec_symbols)
     print("-" * 100)
     if spec_symbols:
-        print(f"Будет сгенерирован пароль из '{password_len - len(spec_symbols)}' символов и спецсимволов {spec_symbols}")
+        print(f"Будет сгенерирован пароль из '{password_len - len(spec_symbols)}' символов и спецсимволов: {spec_symbols}")
     else:
         print(f"Будет сгенерирован пароль из '{password_len}' символов")
 
@@ -67,7 +66,7 @@ def generator(password_len: int = 5, spec_symbols: str = '') -> list:
         string.ascii_uppercase,
         password_len - len(spec_symbols))
 
-    list_symbols = list_symbols + list(spec_symbols)
+    list_symbols += list(spec_symbols)
     shuffle(list_symbols)
 
     return list_symbols
@@ -81,6 +80,7 @@ def main() -> None:
     password_len, spec_symbols = initial_data()
     password = generator(password_len, spec_symbols)
 
+    print("-" * 100)
     filename = input("Введите имя файла для сохранения пароля или нажмите Ввод если пароль нужно только показать: ")
     if not filename:
         print("*" * 100)
