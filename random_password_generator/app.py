@@ -2,6 +2,7 @@
 
 import string
 from random import sample, shuffle
+from typing import Never
 
 
 def initial_data() -> tuple[int, str]:
@@ -72,13 +73,14 @@ def generator(password_len: int = 5, spec_symbols: str = '') -> list:
     return list_symbols
 
 
-def main() -> None:
+def main() -> Never:
     """
     Главная функция генератора случайной последовательности.
-    :return: None
+    :return: Ничего не возвращает.
     """
-    password_len, spec_symbols = initial_data()
-    password = generator(password_len, spec_symbols)
+    # password_len, spec_symbols = initial_data()
+    # password = generator(password_len, spec_symbols)
+    password = generator(*initial_data())
 
     print("-" * 100)
     filename = input("Введите имя файла для сохранения пароля или нажмите Ввод если пароль нужно только показать: ")
