@@ -3,7 +3,7 @@
 import requests
 import os
 import json
-from pprint import pprint
+from time import sleep
 from typing import Optional, Never
 
 
@@ -85,21 +85,67 @@ def input_currency(text_request: str, filename: str) -> Optional[str]:
                     print("|")
                     print("-" * 6 * len(list_currency) + "-")
                     continue
-    print("Ошибка!!! Не найден файл currency.json")
+    print(f"{'!' * 3}\nОшибка!!! Не найден файл currency.json")
     return None
 
 
 def currency_converter(base_currency: str, target_currency: str, key: str) -> Never:
-    amount = int(input("Введите сумму для конвертации: "))
+    """
+    Функция производит запрос на сервере https://v6.exchangerate-api.com курса конвертации валют для базовой валюты
+    полученной от пользователя. Производит расчет целевой валюты на основании введенной пользователем суммы.
+    :param base_currency: Базовая валюта в формате кода из 3х букв, например: 'USD'
+    :param target_currency: Целевая валюта в формате кода из 3х букв, например: 'RUB'
+    :param key: Ключ доступа API KEY
+    :return: Ничего не возвращает.
+    """
+    while True:
+        amount = input("Введите сумму для конвертации: ")
+        try:
+            amount = float(amount)
+            if amount < 0:
+                print(f"Ошибка!!! Введёное число должно быть положительным. Повторите ввод...")
+                continue
+        except ValueError:
+            print(f"Вы ввели недопустимое значение: '{amount}'. Повторите ввод...")
+            continue
+        else:
+            break
+
     url = f"https://v6.exchangerate-api.com/v6/{key}/latest/{base_currency}"
-    response = requests.get(url)
-    data = response.json()
-    conversion_rate = data.get('conversion_rates').get(target_currency)
-    result_convertation = conversion_rate * amount
-    print(f"За {amount} {base_currency} получите {result_convertation:.2f} {target_currency}")
+
+    count_conn = 0
+    while count_conn != 3:
+        try:
+            response = requests.get(url)
+            if not response.ok:
+                print(f"{'!' * 3}\nОшибка сервера. Что-то пошло не так. Повторите запрос позже.")
+                exit()
+            data = response.json()
+            conversion_rate = data.get('conversion_rates').get(target_currency)
+            result_convertation = conversion_rate * amount
+
+            print(f"{'=' * 48}\n"
+                  f"За {amount:.2f} {base_currency} получите {result_convertation:.2f} {target_currency}\n"
+                  f"{'=' * 48}"
+                  )
+            break
+        except OSError:
+            print("\nОшибка соединения с сервером. Повторная попытка через:")
+            for count_time in range(5, 0, -1):
+                print(f"{count_time}..", end='')
+                sleep(1)
+            count_conn += 1
+            continue
+    else:
+        print(f"\n{'-' * 55}\nНет связи с сервером обмена валюты. Программа завершена.")
+        exit()
 
 
 def main():
+    """
+    Главная функция программы конвертера валют.
+    :return: Ничего не возвращает.
+    """
     print("*" * (len(HELLO_TXT) + 4))
     print(f"* {HELLO_TXT} *")
     print("*" * (len(HELLO_TXT) + 4))
@@ -114,8 +160,8 @@ def main():
 
     base_currency = input_currency(INPUT_BASE_CURRENCY, FILENAME_CURRENCY_JSON)
     target_currency = input_currency(INPUT_TARGET_CURRENCY, FILENAME_CURRENCY_JSON)
-    if (base_currency or target_currency) is None:
-        return
+    if base_currency is None or target_currency is None:
+        exit()
 
     currency_converter(base_currency, target_currency, key)
 
