@@ -2,7 +2,8 @@
 Данное приложение осуществляет учет и хранение информации о доходах и расходах зарегистрированных пользователей.
 """
 import os
-from typing import Never
+import json
+from typing import Never, Optional
 import string
 
 HELLO_TXT_1 = 'Программа учёта доходов и расходов.'
@@ -10,7 +11,9 @@ HELLO_TXT_2 = 'Для работы с программой необходимо 
 HELLO_MENU = [
     '1 - Войти со своим логином и паролем.\n',
     '2 - Зарегистрировать нового пользователя.\n',
-    '3 - Выйти из программы.']
+    '3 - Выйти из программы.'
+]
+user_filename = 'user.json'
 
 
 def authorization_menu() -> int:
@@ -32,19 +35,62 @@ def authorization_menu() -> int:
     return int(hello_menu_item)
 
 
-def input_username(text: str):
-    input(f"{text}\nВведите имя пользователя: ")
+def check_username(username: str) -> Optional[list]:
+    try:
+        with open(user_filename, 'r', encoding='utf-8') as f:
+            dict_users = json.load(f)
+            list_user_auth_data = [user for user in dict_users.get('users') if user.get('login') == username]
+
+            return list_user_auth_data
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
 
 
-def main() -> Never:
+def add_user(username: str):
+    dict_user = dict()
+    dict_user['users'] = []
+    with open(user_filename, 'w', encoding='utf-8') as file:
+        userpass = input("Введите пароль: ")
+        dict_user['users'].append({'id': '1', 'login': username, 'password': userpass})
+        json.dump(dict_user, file, indent=4)
+    return dict_user
+
+
+def entry_user(text: str):
+    username = input(f"{text}\nВведите имя пользователя: ")
+    user_auth_data = check_username(username)
+    if (user_auth_data is None) or (not user_auth_data):
+        count_answer = 0
+        while count_answer < 3:
+            answer = input("Отсутствуют данные о пользователях. Создать нового пользователя? Y-Да, N-Нет (выход): ").lower()
+            if answer == 'y':
+                return add_user(username)
+            elif answer == 'n':
+                exit()
+            else:
+                print("Неверный ввод!!!")
+                count_answer += 1
+                continue
+        exit()
+    elif user_auth_data:
+        userpass = input("Введите пароль: ")
+        if userpass == user_auth_data[0]['password']:
+            print("super")
+
+
+def authorization_menu_handler():
     match authorization_menu():
         case 1:
-            input_username('* Вход в программу *')
+            print(entry_user('* Вход в программу *'))
         case 2:
-            input_username('* Регистрация пользователя *')
+            add_user('* Регистрация пользователя *')
         case 3:
             exit()
 
+
+def main() -> Never:
+    authorization_menu_handler()
 
 
 if __name__ == '__main__':
