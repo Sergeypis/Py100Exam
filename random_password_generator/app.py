@@ -10,12 +10,10 @@ def initial_data() -> tuple[int, str]:
     Функция производит валидацию введенных пользователем значений длины пароля и спецсимволов
     :return: Кортеж из: Целое число - длина пароля, Строка спецсимволов для генерации пароля
     """
-
     print("Добро пожаловать в программу по генерации случайных паролей!")
 
     while True:
-        print("." * 100)
-        password_len = input("Введите длину желаемого пароля более 5 символов: ")
+        password_len = input(f"{'.' * 100}\nВведите длину желаемого пароля более 5 символов: ")
         if not password_len.isdigit():
             print("Нужно ввести только целое число!!!")
             continue
@@ -30,12 +28,11 @@ def initial_data() -> tuple[int, str]:
     set_all_spec_symbols = set(set_all_spec_symbols)
     set_all_spec_symbols.add('№')
     while True:
-        print("-" * 100)
-        spec_symbols = input("Введите спецсимволы, если их нужно использовать в пароле. Иначе нажмите Ввод: ")
+        spec_symbols = input(f"{'*' * 100}\nВведите спецсимволы, если их нужно использовать в пароле. Иначе нажмите Ввод: ")
         spec_symbols = set(spec_symbols)
 
         if ' ' in spec_symbols or not spec_symbols.issubset(set_all_spec_symbols):
-            print("Нужно ввести только спецсимволы, без пробелов!!!")
+            print("Нужно ввести только спецсимволы без букв, цифр и пробелов!!!")
             continue
 
         if len(spec_symbols) > password_len:
@@ -82,16 +79,14 @@ def main() -> Never:
     # password = generator(password_len, spec_symbols)
     password = generator(*initial_data())
 
-    print("-" * 100)
-    filename = input("Введите имя файла для сохранения пароля или нажмите Ввод если пароль нужно только показать: ")
+    filename = input(f"{'-' * 100}\n"
+                     f"Введите имя файла для сохранения пароля или нажмите Ввод если пароль нужно только показать: ")
     if not filename:
-        print("*" * 100)
-        print(f"Ваш сгенерированый пароль: {''.join(password)}")
+        print(f"{'*' * 100}\nВаш сгенерированый пароль: {''.join(password)}")
     else:
         with open(filename, 'w', encoding='utf-8') as secret_file:
             secret_file.writelines(''.join(password))
-        print("*" * 100)
-        print(f"Создан файл {filename} с паролем.")
+        print(f"{'*' * 100}\nСоздан файл {filename} с паролем.")
 
 
 if __name__ == '__main__':
