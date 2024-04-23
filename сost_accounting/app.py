@@ -2,6 +2,8 @@
 Данное приложение осуществляет учет и хранение информации о доходах и расходах зарегистрированных пользователей.
 """
 import os
+from pprint import pprint
+import pickle
 import json
 from typing import Never, Optional
 import string
@@ -14,6 +16,13 @@ HELLO_MENU = [
     '3 - Выйти из программы.'
 ]
 user_filename = 'user.json'
+data_filename = 'data.pkl'
+new_user_data_dict = {
+        'расходы': [
+        ],
+        'доходы': [
+        ]
+}
 
 
 def authorization_menu() -> int:
@@ -35,6 +44,24 @@ def authorization_menu() -> int:
     return int(hello_menu_item)
 
 
+def create_new_user_dict(user_data_access: dict):
+    user_data = dict()
+    name = user_data_access.get('login')
+    income_amount_money = input(f"{name}, вы успешно зарегистрированы в программе. Введите сумму для учета в 'Доходах': ")
+    income_description = input("Ведите описание дохода: ")
+
+    if os.path.exists(data_filename):
+        with open(data_filename, 'rb') as pkl_file:
+            user_data = pickle.load(pkl_file)
+            print(user_data)
+
+    user_data.setdefault(name, new_user_data_dict)
+    user_data[name]['доходы'].append({income_description: income_amount_money})
+
+    with open(data_filename, 'wb') as pkl_file:
+        pickle.dump(user_data, pkl_file)
+
+
 def check_username(username: str) -> Optional[list]:
     try:
         with open(user_filename, 'r', encoding='utf-8') as f:
@@ -47,44 +74,80 @@ def check_username(username: str) -> Optional[list]:
         return None
 
 
-def add_user(username: str):
-    dict_user = dict()
-    dict_user['users'] = []
-    with open(user_filename, 'w', encoding='utf-8') as file:
-        userpass = input("Введите пароль: ")
-        dict_user['users'].append({'id': '1', 'login': username, 'password': userpass})
-        json.dump(dict_user, file, indent=4)
-    return dict_user
+def add_user(username: str) -> list:
+    user_data_access = dict()
+    user_data_access['users'] = []
+    userpass = input("Введите пароль: ")
+    try:
+        with open(user_filename, 'r', encoding='utf-8') as file_read:
+            user_data_access = json.load(file_read)
+            count_users = len(user_data_access['users'])
+            user_data_access['users'].append({'login': username, 'password': userpass})
+        with open(user_filename, 'w', encoding='utf-8') as file_write:
+            json.dump(user_data_access, file_write, indent=4)
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        with open(user_filename, 'w', encoding='utf-8') as file:
+            user_data_access['users'].append({'login': username, 'password': userpass})
+            json.dump(user_data_access, file, indent=4)
+
+    create_new_user_dict(user_data_access['users'][-1])
+    return [user_data_access['users'][-1]]
 
 
 def entry_user(text: str):
+    count_answer = 0
     username = input(f"{text}\nВведите имя пользователя: ")
     user_auth_data = check_username(username)
     if (user_auth_data is None) or (not user_auth_data):
-        count_answer = 0
         while count_answer < 3:
-            answer = input("Отсутствуют данные о пользователях. Создать нового пользователя? Y-Да, N-Нет (выход): ").lower()
-            if answer == 'y':
-                return add_user(username)
-            elif answer == 'n':
-                exit()
-            else:
-                print("Неверный ввод!!!")
-                count_answer += 1
-                continue
+            answer = input(f"Отсутствуют данные о пользователе '{username}'. Создать нового? Y-Да, N-Нет (Выход): ").lower()
+            match answer:
+                case 'y':
+                    return add_user(username)
+                case 'n':
+                    exit()
+                case _:
+                    print("Неверный ввод!!!")
+                    count_answer += 1
+                    continue
         exit()
     elif user_auth_data:
         userpass = input("Введите пароль: ")
         if userpass == user_auth_data[0]['password']:
             print("super")
+            return user_auth_data
+
+
+def reg_user(text: str) -> list:
+    count_answer = 0
+    while True:
+        username = input(f"{text}\nВведите имя пользователя: ")
+        user_auth_data = check_username(username)
+        if (user_auth_data is None) or (not user_auth_data):
+            return add_user(username)
+        elif user_auth_data:
+            while True:
+                answer = input(f"Пользователь с именем '{username}' уже существует. Ввести заново? Y-Да, N-Нет (Выход): ").lower()
+                match answer:
+                    case 'y':
+                        break
+                    case 'n':
+                        exit()
+                    case _:
+                        print("Неверный ввод!!!")
+                        count_answer += 1
+                        if count_answer == 3:
+                            exit()
+                        continue
 
 
 def authorization_menu_handler():
     match authorization_menu():
         case 1:
-            print(entry_user('* Вход в программу *'))
+            current_user = entry_user('* Вход в программу *')
         case 2:
-            add_user('* Регистрация пользователя *')
+            current_user = reg_user('* Регистрация пользователя *')
         case 3:
             exit()
 

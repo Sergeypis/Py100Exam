@@ -1,9 +1,16 @@
 {
     "users": [
         {
-            "id": "1",
             "login": "sergey",
-            "password": "qwerty"
+            "password": "12345"
+        },
+        {
+            "login": "boris",
+            "password": "123"
+        },
+        {
+            "login": "tom",
+            "password": "tom"
         }
     ]
 }
