@@ -3,6 +3,7 @@
 """
 import os
 from pprint import pprint
+from prettytable import PrettyTable
 import pickle
 import json
 from typing import Never, Optional
@@ -159,7 +160,11 @@ def authorization_menu_handler():
 
 
 def output_user_data():
-    pass
+    header_table = ['Расходы', 'Сумма (руб) ', 'Доходы', ' Сумма (руб)']
+    output_table = PrettyTable()
+    output_table.field_names = header_table
+    output_table.add_row(['', '', '', ''])
+    print(output_table)
 
 
 def main_menu_handler():
