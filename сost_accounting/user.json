@@ -2,7 +2,15 @@
     "users": [
         {
             "login": "sergey",
-            "password": "123"
+            "password": "qwerty"
+        },
+        {
+            "login": "Boris Pavlovich",
+            "password": "12345"
+        },
+        {
+            "login": "1",
+            "password": "1"
         }
     ]
 }
