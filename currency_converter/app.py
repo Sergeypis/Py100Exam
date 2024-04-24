@@ -4,7 +4,8 @@ import requests
 import os
 import json
 from time import sleep
-from typing import Optional, Never
+# from typing import Optional, Never
+from typing import Optional
 
 
 HELLO_TXT = 'Добро пожаловать в программу Конвертер валют'
@@ -89,7 +90,7 @@ def input_currency(text_request: str, filename: str) -> Optional[str]:
     return None
 
 
-def currency_converter(base_currency: str, target_currency: str, key: str) -> Never:
+def currency_converter(base_currency: str, target_currency: str, key: str) -> None:
     """
     Функция производит запрос на сервере https://v6.exchangerate-api.com курса конвертации валют для базовой валюты
     полученной от пользователя. Производит расчет целевой валюты на основании введенной пользователем суммы.

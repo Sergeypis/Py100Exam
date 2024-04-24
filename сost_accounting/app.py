@@ -6,8 +6,11 @@ from pprint import pprint
 from prettytable import PrettyTable
 import pickle
 import json
-from typing import Never, Optional
+# from typing import Never, Optional
+from typing import Optional
 import string
+import copy
+
 
 HELLO_TXT_1 = 'Программа учёта доходов и расходов.'
 HELLO_TXT_2 = 'Для работы с программой необходимо войти или зарегистрироваться.'
@@ -26,17 +29,6 @@ MAIN_MENU = [
 ]
 user_filename = 'user.json'
 data_filename = 'data.pkl'
-new_user_data_dict = {
-    'расходы': [
-        {'стол': '12000'},
-        {'стул': '3500'},
-        {'микроволновка': '7800'}
-    ],
-    'доходы': [
-        #{'cash': '14000'},
-        #{'продажа наркоты': '74000'}
-    ]
-}
 
 
 def authorization_menu() -> int:
@@ -77,6 +69,17 @@ def main_menu() -> int:
 
 
 def create_new_user_data(user_data_access: dict):
+    new_user_data_dict = {
+        'расходы': [
+            # {'стол': '12000'},
+            # {'стул': '3500'},
+            # {'микроволновка': '7800'}
+        ],
+        'доходы': [
+            # {'cash': '14000'},
+            # {'продажа': '74000'}
+        ]
+    }
     user_data = dict()
     username = user_data_access.get('login')
     income_amount_money = input(f"{username}, вы успешно зарегистрированы в программе. "
@@ -200,12 +203,22 @@ def authorization_menu_handler():
             exit()
 
 
-def read_user_data(username: str):
+def read_user_data():
     try:
         with open(data_filename, 'rb') as pkl_file:
             user_data = pickle.load(pkl_file)
 
-        return user_data[username]
+        return user_data
+    except OSError:
+        print("Ошибка файла данных!!! Обратитесь к разработчику. Программа завершена.")
+        exit()
+
+
+def save_pkl_user_data(user_data: dict):
+    try:
+        with open(data_filename, 'wb') as pkl_file:
+
+            pickle.dump(user_data, pkl_file)
     except OSError:
         print("Ошибка файла данных!!! Обратитесь к разработчику. Программа завершена.")
         exit()
@@ -217,8 +230,7 @@ def output_user_data(username: str, user_data: dict):
     output_table = PrettyTable()
     output_table.field_names = header_table
 
-    # current_user_data = read_user_data(username)
-    current_user_data = user_data.copy()
+    current_user_data = copy.deepcopy(user_data)
 
     expenses = current_user_data.get('расходы')
     incomes = current_user_data.get('доходы')
@@ -240,53 +252,51 @@ def output_user_data(username: str, user_data: dict):
     print(output_table)
 
 
-# def add_del_user_data(username: str, action: int):
-#     current_user_data = read_user_data(username)
-#
-def save_pkl_user_data(username: str, current_user_data: dict):
-    pass
-
-
 def main_menu_handler(username: str):
-    current_user_data = read_user_data(username)
+    user_data = read_user_data()
+    current_user_data = user_data[username]
     while True:
-        menu_number = main_menu()
-        match menu_number:
+        match main_menu():
             case 1:  # Добавить расходы
-                expenses_amount_money = input(f"{username} Введите сумму для учета в 'Расходах': ")
+                expenses_amount_money = input(f"{username}, введите сумму для учета в 'Расходах': ")
                 expenses_description = input("Ведите описание расхода: ")
                 current_user_data['расходы'].append({expenses_description: expenses_amount_money})
 
             case 2:  # Добавить доходы
-                income_amount_money = input(f"{username} Введите сумму для учета в 'Доходах': ")
+                income_amount_money = input(f"{username}, введите сумму для учета в 'Доходах': ")
                 income_description = input("Ведите описание дохода: ")
                 current_user_data['доходы'].append({income_description: income_amount_money})
 
             case 3:  # Удалить строку расходов
-                print("В разработке")
-                exit()
+                del_expenses_name = input(f"{username}, введите название 'Расхода' для удаления: ")
+                for expense in current_user_data['расходы']:
+                    if del_expenses_name in expense:
+                        current_user_data['расходы'].remove(expense)
 
             case 4:  # Удалить строку доходов
-                print("В разработке")
-                exit()
+                del_income_name = input(f"{username}, введите название 'Дохода' для удаления: ")
+                for income in current_user_data['доходы']:
+                    if del_income_name in income:
+                        current_user_data['доходы'].remove(income)
 
             case 5:  # Выход из программы
                 print("Программа завершена.")
                 exit()
         output_user_data(username, current_user_data)
-        save_pkl_user_data(username, current_user_data)
+        user_data[username] = current_user_data
+        save_pkl_user_data(user_data)
 
 
-def main() -> Never:
+def main() -> None:
     current_user, authorization = authorization_menu_handler()  # Авторизация и регистрация пользователя
     username = current_user.get('login')
     if not authorization:
         cash_new_user = create_new_user_data(current_user)  # Создание файла данных и добавление в него нового пользователя
-        print(f"{username}, ваш балланс на текущий момент: {cash_new_user:.2f} руб.")
+        print(f"{'*-*-*-' * 10}\n{username}, ваш балланс на текущий момент: {cash_new_user:.2f} руб.")
     else:
         print(f"Таблица учёта Расходов и Доходов пользователя '{username}':")
-        current_user_data = read_user_data(username)
-        output_user_data(username, current_user_data)
+        user_data = read_user_data()
+        output_user_data(username, user_data[username])
 
     main_menu_handler(username)
 
