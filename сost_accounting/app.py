@@ -4,7 +4,6 @@
 import os
 import json
 import copy
-import string
 from typing import Optional
 
 import pickle
@@ -200,19 +199,19 @@ def add_user_json(username: str) -> dict:
             user_data_access = json.load(file_read)
             user_data_access['users'].append({'login': username, 'password': userpass})
         with open(user_filename, 'w', encoding='utf-8') as file_write:
-            json.dump(user_data_access, file_write, indent=4)
+            json.dump(user_data_access, file_write, indent=4, ensure_ascii=False)
 
     except (FileNotFoundError, json.JSONDecodeError):
         with open(user_filename, 'w', encoding='utf-8') as file:
             user_data_access['users'].append({'login': username, 'password': userpass})
-            json.dump(user_data_access, file, indent=4)
+            json.dump(user_data_access, file, indent=4, ensure_ascii=False)
 
     return user_data_access['users'][-1]
 
 
 def entry_user() -> (dict, bool):
     """
-    Функция обработчик перврго пункта меню авторизации.Вход в программу по логину и паролю. Производится валидация
+    Функция обработчик первого пункта меню авторизации. Вход в программу по логину и паролю. Производится валидация
     введённых данных, проверка регистрации пользователя, сверка пароля.
     :return: Кортеж: Словарь данных для авторизации текущего пользователя (логин/пароль). Флаг авторизации.
     """
@@ -253,17 +252,22 @@ def entry_user() -> (dict, bool):
             exit()
 
 
-def reg_user(text: str) -> dict:
+def reg_user() -> dict:
+    """
+    Функция обработчик второго пункта меню авторизации. Регистрация нового пользователя в программе (запись в .json).
+    Производится валидация введённых данных, проверка регистрации пользователя.
+    :return: Кортеж: Словарь данных для авторизации текущего пользователя (логин/пароль).
+    """
     count_answer = 0
     while True:
-        username = input(f"{text}\nВведите имя пользователя: ")
-        user_auth_data = check_username(username)
+        name_input = input_description(f"* Регистрация пользователя *\nВведите имя пользователя: ")
+        user_auth_data = check_username(name_input)
         if (user_auth_data is None) or (not user_auth_data):
-            return add_user_json(username)
+            return add_user_json(name_input)
         elif user_auth_data:
             while True:
                 answer = input(
-                    f"Пользователь с именем '{username}' уже существует. Ввести заново? Y-Да, N-Нет (Выход): ").lower()
+                    f"Пользователь с именем '{name_input}' уже существует. Ввести заново? Y-Да, N-Нет (Выход): ").lower()
                 match answer:
                     case 'y':
                         break
@@ -289,7 +293,7 @@ def authorization_menu_handler() -> (dict, bool):
         case '1':  # Вход с логином и паролем
             current_user, authorization = entry_user()
         case '2':  # Регистрация нового пользователя
-            current_user = reg_user('* Регистрация пользователя *')
+            current_user = reg_user()
         case '3':  # Выход из программы
             print("Программа завершена.")
             exit()
@@ -297,29 +301,42 @@ def authorization_menu_handler() -> (dict, bool):
     return current_user, authorization
 
 
-def save_pkl_user_data(user_data: dict):
+def save_pkl_user_data(user_data: dict) -> None:
+    """
+    Функция производит сериализацию пользовательских данных (словарь с полной структурой данных всех пользователей)
+    в Pickle файл и перезаписывает его.
+    :param user_data: Словарь с данными пользователей
+    :return: Ничего не возвращает.
+    """
     try:
         with open(data_filename, 'wb') as pkl_file:
-
             pickle.dump(user_data, pkl_file)
+
     except OSError:
         print("Ошибка файла данных!!! Обратитесь к разработчику. Программа завершена.")
         exit()
 
 
-def output_user_data(username: str, user_data: dict):
+def output_user_data(username: str, curr_user_data: dict) -> None:
+    """
+    Функция осуществляет вывод в консоль пользовательских данных (Расходы/Доходы) в табличном виде с помощью модуля
+    PrettyTable. Производит расчёт и вывод в таблицу суммарных итоговых значений.
+    :param username: Имя текущего авторизованного пользователя (логин).
+    :param curr_user_data: Словарь с данными текущего пользователя (Расходы/Доходы).
+    :return: Ничего не возвращает.
+    """
     table_list = []
     header_table = ['Расходы', 'Сумма, руб. ', 'Доходы', ' Сумма, руб.']
     output_table = PrettyTable()
     output_table.field_names = header_table
 
-    current_user_data = copy.deepcopy(user_data)
+    current_user_data = copy.deepcopy(curr_user_data)
 
     expenses = current_user_data.get('расходы')
     incomes = current_user_data.get('доходы')
     total_expenses = sum([float(*item.values()) for item in expenses])
     total_incomes = sum([float(*item.values()) for item in incomes])
-    summ_table_row = ['Итого расходы:', f'{total_expenses:.2f}', 'Итого доходы:', f'{total_incomes:.2f}']
+    summ_table_row = ['Расходы, итого:', f'{total_expenses:.2f}', 'Доходы, итого:', f'{total_incomes:.2f}']
 
     smaller_list = min(expenses, incomes, key=len)
     bigger_list = max(expenses, incomes, key=len)
@@ -332,46 +349,95 @@ def output_user_data(username: str, user_data: dict):
     output_table.add_rows(table_list)
     output_table.add_row(['', '', '', ''])
     output_table.add_row(summ_table_row)
-    print(f"{'*-*-*-' * 10}\nТаблица учёта Расходов и Доходов пользователя '{username}':")
+    print(f"{'*-*-*-' * 11}\nТаблица учёта Расходов и Доходов пользователя '{username}':")
     print(output_table)
 
 
-def main_menu_handler(username: str):
+def main_menu_handler(username: str) -> None:
+    """
+    Функция обработчик главного меню программы. Производит обработку введённых данных пользователя, вывод данных
+    в консоль и сохранение в бинарный файл.
+    :param username: Имя текущего авторизованного пользователя (логин).
+    :return: Ничего не возвращает.
+    """
+    def output_and_save_data(user_name: str, curr_data: dict, full_data: dict) -> None:
+        """
+        Функция для вызова обработчиков вывода данных в консоль и сохранения в Pickle файл.
+        :param user_name: Имя текущего авторизованного пользователя (логин).
+        :param curr_data: Словарь с данными текущего пользователя (Расходы/Доходы).
+        :param full_data: Словарь с данными всех пользователей
+        :return: Ничего не возвращает.
+        """
+        curr_user_data = copy.deepcopy(curr_data)
+        full_data_dict = copy.deepcopy(full_data)
+
+        output_user_data(username, curr_user_data)  # Вывод данных в консоль
+        full_data_dict[user_name] = curr_user_data
+        save_pkl_user_data(full_data_dict)  # Сериализация пользовательских данных в Pickle файл
+
     user_data = read_data_file(data_filename)
     current_user_data = user_data[username]
     while True:
         match main_menu():
             case '1':  # Добавить расходы
                 expenses_amount_money = input_amount_money(f"{username}, введите сумму для учета в 'Расходах': ")
-                expenses_description = input_description("Ведите описание расхода: ")
-                current_user_data['расходы'].append({expenses_description: expenses_amount_money})
+                while True:
+                    expenses_description = input_description("Ведите описание расхода: ")
+                    for expense in current_user_data['расходы']:
+                        if expenses_description in expense:
+                            print(f"\nРасход с именем '{expenses_description}' уже есть в списке. "
+                                  f"Введите уникальное описание.")
+                            break
+                    else:
+                        current_user_data['расходы'].append({expenses_description: expenses_amount_money})
+                        output_and_save_data(username, current_user_data, user_data)
+                        break
 
             case '2':  # Добавить доходы
                 income_amount_money = input_amount_money(f"{username}, введите сумму для учета в 'Доходах': ")
-                income_description = input_description("Ведите описание дохода: ")
-                current_user_data['доходы'].append({income_description: income_amount_money})
+                while True:
+                    income_description = input_description("Ведите описание дохода: ")
+                    for income in current_user_data['доходы']:
+                        if income_description in income:
+                            print(f"\nДосход с именем '{income_description}' уже есть в списке. "
+                                  f"Введите уникальное описание.")
+                            break
+                    else:
+                        current_user_data['доходы'].append({income_description: income_amount_money})
+                        output_and_save_data(username, current_user_data, user_data)
+                        break
 
             case '3':  # Удалить строку расходов
-                del_expenses_name = input_description(f"{username}, введите название 'Расхода' для удаления: ")
+                del_expenses_description = input_description(f"{username}, введите название 'Расхода' для удаления: ")
                 for expense in current_user_data['расходы']:
-                    if del_expenses_name in expense:
+                    if del_expenses_description in expense:
                         current_user_data['расходы'].remove(expense)
+                        output_and_save_data(username, current_user_data, user_data)
+                        break
+                else:
+                    print(f"\nСтроки расхода с именем '{del_expenses_description}' не найдено!.")
 
             case '4':  # Удалить строку доходов
-                del_income_name = input_description(f"{username}, введите название 'Дохода' для удаления: ")
+                del_income_description = input_description(f"{username}, введите название 'Дохода' для удаления: ")
                 for income in current_user_data['доходы']:
-                    if del_income_name in income:
+                    if del_income_description in income:
                         current_user_data['доходы'].remove(income)
+                        output_and_save_data(username, current_user_data, user_data)
+                        break
+                else:
+                    print(f"\nСтроки дохода с именем '{del_income_description}' не найдено!.")
 
             case '5':  # Выход из программы
-                print("Программа завершена.")
+                print("*** Программа завершена ***")
                 exit()
-        output_user_data(username, current_user_data)
-        user_data[username] = current_user_data
-        save_pkl_user_data(user_data)
 
 
 def main() -> None:
+    """
+    Главная функция программы. Осуществляет авторизацию и регистрацию пользователей, создание и проверку файла данных,
+    вызов главного меню программы.
+    :return: Ничего не возвращает.
+    """
     current_user, authorization = authorization_menu_handler()  # Авторизация и регистрация пользователя
     username = current_user.get('login')
     if not authorization:

@@ -3,6 +3,10 @@
         {
             "login": "ser",
             "password": "123"
+        },
+        {
+            "login": "ещь",
+            "password": "ещь"
         }
     ]
 }
