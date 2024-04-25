@@ -68,7 +68,21 @@ def main_menu() -> int:
     return int(main_menu_item)
 
 
-def create_new_user_data(user_data_access: dict):
+def read_data_file(filename: str) -> Optional[dict]:
+    """
+    Функция читает данные пользователей сериализованные в Pickle файл, если он существует.
+    :param filename: Имя/путь до файла
+    :return: Словарь с данными пользователей
+    """
+    try:
+        with open(filename, 'rb') as pkl_file:
+            return pickle.load(pkl_file)
+    except OSError:
+        print("Ошибка файла данных!!! Обратитесь к разработчику. Программа завершена.")
+        exit()
+
+
+def create_new_user_data(username: str):
     new_user_data_dict = {
         'расходы': [
             # {'стол': '12000'},
@@ -81,14 +95,12 @@ def create_new_user_data(user_data_access: dict):
         ]
     }
     user_data = dict()
-    username = user_data_access.get('login')
+
     income_amount_money = input(f"{username}, вы успешно зарегистрированы в программе. "
                                 f"Введите сумму для учета в 'Доходах': ")
     income_description = input("Ведите описание дохода: ")
 
-    if os.path.exists(data_filename):
-        with open(data_filename, 'rb') as pkl_file:
-            user_data = pickle.load(pkl_file)
+    user_data = read_data_file(data_filename)
 
     user_data[username] = new_user_data_dict
     user_data[username]['доходы'].append({income_description: income_amount_money})
@@ -203,17 +215,6 @@ def authorization_menu_handler():
             exit()
 
 
-def read_user_data():
-    try:
-        with open(data_filename, 'rb') as pkl_file:
-            user_data = pickle.load(pkl_file)
-
-        return user_data
-    except OSError:
-        print("Ошибка файла данных!!! Обратитесь к разработчику. Программа завершена.")
-        exit()
-
-
 def save_pkl_user_data(user_data: dict):
     try:
         with open(data_filename, 'wb') as pkl_file:
@@ -253,7 +254,7 @@ def output_user_data(username: str, user_data: dict):
 
 
 def main_menu_handler(username: str):
-    user_data = read_user_data()
+    user_data = read_data_file()
     current_user_data = user_data[username]
     while True:
         match main_menu():
@@ -291,11 +292,11 @@ def main() -> None:
     current_user, authorization = authorization_menu_handler()  # Авторизация и регистрация пользователя
     username = current_user.get('login')
     if not authorization:
-        cash_new_user = create_new_user_data(current_user)  # Создание файла данных и добавление в него нового пользователя
+        cash_new_user = create_new_user_data(username)  # Создание файла данных и добавление в него нового пользователя
         print(f"{'*-*-*-' * 10}\n{username}, ваш балланс на текущий момент: {cash_new_user:.2f} руб.")
     else:
         print(f"Таблица учёта Расходов и Доходов пользователя '{username}':")
-        user_data = read_user_data()
+        user_data = read_data_file()
         output_user_data(username, user_data[username])
 
     main_menu_handler(username)
