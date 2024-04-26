@@ -5,6 +5,8 @@ import os
 import json
 import copy
 from typing import Optional
+import uuid
+import hashlib
 
 import pickle
 from prettytable import PrettyTable
@@ -72,6 +74,33 @@ def main_menu() -> str:
         break
 
     return main_menu_item
+
+
+def hash_password(password: str) -> str:
+    """
+    Функция хеширования паролей с алгоритмом sha256.
+    Строка для хеширования состовляется из закодированного в последовательность байтов пароля и сгенерированной
+    закодированной случайной последовательности.
+    :param password: Пароль, введённый пользователем при регистрации.
+    :return: Дайджест HEX составной строки для хеширования.
+    """
+    salt = uuid.uuid4().hex  # Случайная последовательность генерируемая uuid.
+    return hashlib.sha256(salt.encode() + password.encode()).hexdigest() + ':' + salt
+
+
+def check_password(hashed_password: str, user_password: str) -> bool:
+    """
+    Функция проверки хешированых паролей с алгоритмом sha256.
+    Сначала от пароля отделяется незакодированная случайная последовательность. Затем введённый для проверки пароль
+    хешируется той же функцией, что и при сохранении и результат сравнивается с сохранённым хешированным паролем.
+    Строка для хеширования состовляется из закодированного в последовательность байтов пароля и сгенерированной
+    закодированной случайной последовательности.
+    :param hashed_password: Хешированный пароль пользователя из файла .json.
+    :param user_password: Введённый для проверки пароль.
+    :return: bool, результат сравнения паролей.
+    """
+    password, salt = hashed_password.split(':')
+    return password == hashlib.sha256(salt.encode() + user_password.encode()).hexdigest()
 
 
 def read_data_file(filename: str) -> Optional[dict]:
@@ -187,23 +216,25 @@ def check_username(username: str) -> Optional[dict]:
 
 def add_user_json(username: str) -> dict:
     """
-    Функция добавляет и сохраняет в файле .json данные для авторизации новых пользователей (логин/пароль).
+    Функция добавляет и сохраняет в файле .json данные для авторизации новых пользователей (логин/пароль). Пароль перед
+    сохранением хешируется хеш-функцией с алгоритмом sha256.
     :param username: Имя, введённое пользователем при регистрации.
     :return: Словарь с логином и паролем последнего сохранённого пользователя.
     """
     user_data_access = dict()
     user_data_access['users'] = []
     userpass = input("Введите пароль: ")
+    hashed_password = hash_password(userpass)
     try:
         with open(user_filename, 'r', encoding='utf-8') as file_read:
             user_data_access = json.load(file_read)
-            user_data_access['users'].append({'login': username, 'password': userpass})
+            user_data_access['users'].append({'login': username, 'password': hashed_password})
         with open(user_filename, 'w', encoding='utf-8') as file_write:
             json.dump(user_data_access, file_write, indent=4, ensure_ascii=False)
 
     except (FileNotFoundError, json.JSONDecodeError):
         with open(user_filename, 'w', encoding='utf-8') as file:
-            user_data_access['users'].append({'login': username, 'password': userpass})
+            user_data_access['users'].append({'login': username, 'password': hashed_password})
             json.dump(user_data_access, file, indent=4, ensure_ascii=False)
 
     return user_data_access['users'][-1]
@@ -243,7 +274,7 @@ def entry_user() -> (dict, bool):
             count_pass = 0
             while count_pass < 3:
                 userpass = input("Введите пароль: ")
-                if userpass == user_auth_data.get('password'):
+                if check_password(user_auth_data.get('password'), userpass):
                     return user_auth_data, authorization
                 print("Неверный пароль!!! попробуйте еще раз.")
                 count_pass += 1

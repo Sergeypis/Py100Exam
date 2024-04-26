@@ -7,6 +7,14 @@
         {
             "login": "ещь",
             "password": "ещь"
+        },
+        {
+            "login": "1",
+            "password": "f9a8d73f75262c57d45e9c2205ba7ef483e07a9320d35e8b89b95f3ac9469292:db57f372b1414e7eb66fac5e804c8b3d"
+        },
+        {
+            "login": "222",
+            "password": "fac7fd81e80e7b5f6d97b93449fae92be377fff74ca5b557d71d60fa33d7a585:ce6c3030af694654b5e292c621677d01"
         }
     ]
 }
